@@ -29,7 +29,6 @@ public class MarsService {
     @Autowired
     MarsTokenRepository marsTokenRepository;
 
-    @Scheduled(fixedDelay = 10000)
     public void getAndSaveMarsToken()
     {
 

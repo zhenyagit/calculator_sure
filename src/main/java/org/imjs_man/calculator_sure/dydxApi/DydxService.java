@@ -1,7 +1,13 @@
 package org.imjs_man.calculator_sure.dydxApi;
 
+        import org.apache.tomcat.util.json.ParseException;
+        import org.imjs_man.calculator_sure.calculator.AllDayDataAskBid;
+        import org.imjs_man.calculator_sure.calculator.Calculator;
         import org.imjs_man.calculator_sure.entity.MarsToken;
+        import org.imjs_man.calculator_sure.entity.PairDepth;
         import org.imjs_man.calculator_sure.repository.MarsTokenRepository;
+        import org.imjs_man.calculator_sure.service.PairService;
+        import org.json.JSONException;
         import org.jsoup.Connection;
         import org.jsoup.Jsoup;
         import org.jsoup.nodes.Document;
@@ -17,6 +23,7 @@ package org.imjs_man.calculator_sure.dydxApi;
         import java.util.ArrayList;
         import java.util.HashSet;
         import java.util.List;
+        import java.util.Map;
 
 
 @Service
@@ -27,41 +34,41 @@ public class DydxService {
     DydxParser dydxParser;
 
     @Autowired
-    MarsTokenRepository marsTokenRepository;
+    PairService pairService;
 
+    @Autowired
+    Calculator calculator;
+
+    @Scheduled(fixedDelay = 10000)//todo connector
+    public void showCalcData() {
+        AllDayDataAskBid allData= calculator.finalPrice();
+        System.out.format("Ask price = %f; volume %f\n", allData.getAskPrice(), allData.getAskVolume());
+        System.out.format("Bid price = %f; volume %f\n", allData.getBidPrice(), allData.getBidVolume());
+        System.out.format("Difference = %f\n", -allData.getBidPrice()+allData.getAskPrice());
+    }
     @Scheduled(fixedDelay = 10000)
     public void getAndSaveMarsToken()
     {
-
-        List<MarsToken> marsTokens = new ArrayList<>();
+        String firstToken = "BTC";
+        String secondToken ="USD";
         try {
-            marsTokens = marsParser.getMarsTokenFromString(getDataFromUrl());
-        } catch (IOException e) {
+            Map<String,String> data = dydxParser.getPairDepthFromJson(getDepthByPair(firstToken,secondToken));
+            PairDepth pairDepth = new PairDepth();
+            pairDepth.setfToken(firstToken);
+            pairDepth.setsToken(secondToken);
+            pairDepth.setAsks(data.get("asks"));
+            pairDepth.setBids(data.get("bids"));
+            pairService.save(pairDepth);
+        } catch (IOException | ParseException | JSONException e) {
             e.printStackTrace();
         }
-        marsTokenRepository.saveAll(marsTokens);
     }
-    public String getDataFromUrl() throws IOException {
+    public String getDepthByPair(String tokenName1, String tokenName2) throws IOException {
         try {
-            String pagination = "{\"page\":0,\"size\":10}";
-
-            String jsonRequest = Jsoup.connect("https://marsbase-backend-master.k8s.sparklingtide.com/api/whalemarket/filter")
-                    .data("minRank", "")
-                    .data("maxRank", "")
-                    .data("minAmount", "")
-                    .data("maxAmount", "")
-                    .data("timeInMinutes", "")
-                    .data("offerMode", "MANUAL")
-                    .data("actionType", "BUY")
-                    .data("isHot", "false")
-                    .data("search", "")
-                    .data("pagination", pagination)
-                    .data("page", "0")
-                    .data("size", "10")
+            return Jsoup.connect("https://api.dydx.exchange/v3/orderbook/"+tokenName1+"-"+tokenName2)
                     .ignoreContentType(true)
                     .timeout(300000)
                     .get().body().text();
-            return jsonRequest;
         } catch (IOException e) {
             throw new IOException(e.getMessage()); //todo create exception class
         }
