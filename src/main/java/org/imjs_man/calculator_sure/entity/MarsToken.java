@@ -34,6 +34,7 @@ public class MarsToken {
     private Boolean isNew;
     private Boolean isHot;
     private double maxBid;
+    @Column(name = "rankk")
     private int rank;
 
     public long getId() {

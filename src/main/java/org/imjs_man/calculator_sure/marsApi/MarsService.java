@@ -14,7 +14,9 @@ import org.springframework.stereotype.Service;
 
 import java.io.Console;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.List;
 
 
 @Service
@@ -31,13 +33,13 @@ public class MarsService {
     public void getAndSaveMarsToken()
     {
 
-        MarsToken marsToken = null;
+        List<MarsToken> marsTokens = new ArrayList<>();
         try {
-            marsToken = marsParser.getMarsTokenFromString(getDataFromUrl());
+            marsTokens = marsParser.getMarsTokenFromString(getDataFromUrl());
         } catch (IOException e) {
             e.printStackTrace();
         }
-        marsTokenRepository.save(marsToken);
+        marsTokenRepository.saveAll(marsTokens);
     }
     public String getDataFromUrl() throws IOException {
         try {
