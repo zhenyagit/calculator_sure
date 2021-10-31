@@ -46,31 +46,4 @@ public class DydxService {
         System.out.format("Bid price = %f; volume %f\n", allData.getBidPrice(), allData.getBidVolume());
         System.out.format("Difference = %f\n", -allData.getBidPrice()+allData.getAskPrice());
     }
-    @Scheduled(fixedDelay = 10000)
-    public void getAndSaveMarsToken()
-    {
-        String firstToken = "BTC";
-        String secondToken ="USD";
-        try {
-            Map<String,String> data = dydxParser.getPairDepthFromJson(getDepthByPair(firstToken,secondToken));
-            PairDepth pairDepth = new PairDepth();
-            pairDepth.setfToken(firstToken);
-            pairDepth.setsToken(secondToken);
-            pairDepth.setAsks(data.get("asks"));
-            pairDepth.setBids(data.get("bids"));
-            pairService.save(pairDepth);
-        } catch (IOException | ParseException | JSONException e) {
-            e.printStackTrace();
-        }
-    }
-    public String getDepthByPair(String tokenName1, String tokenName2) throws IOException {
-        try {
-            return Jsoup.connect("https://api.dydx.exchange/v3/orderbook/"+tokenName1+"-"+tokenName2)
-                    .ignoreContentType(true)
-                    .timeout(300000)
-                    .get().body().text();
-        } catch (IOException e) {
-            throw new IOException(e.getMessage()); //todo create exception class
-        }
-    }
 }
